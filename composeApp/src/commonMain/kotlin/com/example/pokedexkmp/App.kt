@@ -1,71 +1,149 @@
 package com.example.pokedexkmp
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.example.pokedexkmp.data.PokemonMock
-import com.example.pokedexkmp.navigation.HomeRoute
-import com.example.pokedexkmp.navigation.PokedexRoute
-import com.example.pokedexkmp.navigation.PokemonDetailRoute
-import com.example.pokedexkmp.ui.PokemonDetailScreen
-import org.jetbrains.compose.resources.painterResource
+import com.example.pokedexkmp.navigation.*
+import com.example.pokedexkmp.ui.*
 
-import pokedexkmp.composeapp.generated.resources.Res
-import pokedexkmp.composeapp.generated.resources.compose_multiplatform
+// Cores do nosso Tema Escuro Premium
+val DarkSurface = Color(0xFF1E1E1E)
+val DarkBackground = Color(0xFF101010)
 
 @Composable
-@Preview
 fun App() {
-    MaterialTheme {
+    // Forçamos o MaterialTheme a ser escuro para corrigir as barras do sistema (bateria/navegação nativa)
+    MaterialTheme(colorScheme = darkColorScheme(background = DarkBackground, surface = DarkSurface)) {
         val navController = rememberNavController()
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
 
-        NavHost( navController = navController,
-            startDestination = HomeRoute
-        ) {
-            composable<HomeRoute> {
-                navController.navigate(PokedexRoute)
+        val viewModel = viewModel { PokedexViewModel() }
+        val pokedex by viewModel.pokedex.collectAsState()
+        val myTeam by viewModel.myTeam.collectAsState()
+        val isLoading by viewModel.isLoading.collectAsState()
+
+        val showBottomBar = currentDestination?.hierarchy?.any {
+            it.hasRoute(PokedexRoute::class) || it.hasRoute(TeamBuilderRoute::class)
+        } == true
+
+        Scaffold(
+            // Fundo geral do app
+            containerColor = DarkBackground,
+            bottomBar = {
+                if (showBottomBar) {
+                    NavigationBar(
+                        containerColor = DarkSurface, // Fundo cinza escuro elegante
+                        contentColor = Color.White
+                    ) {
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.List, contentDescription = "Pokédex") },
+                            label = { Text("Pokédex") },
+                            selected = currentDestination?.hierarchy?.any { it.hasRoute(PokedexRoute::class) } == true,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PokeRed,
+                                selectedTextColor = PokeRed,
+                                unselectedIconColor = Color.Gray,
+                                unselectedTextColor = Color.Gray,
+                                indicatorColor = Color(0xFF2C2C2C) // Fundo do ícone selecionado
+                            ),
+                            onClick = {
+                                navController.navigate(PokedexRoute) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.Favorite, contentDescription = "Meu Time") },
+                            label = { Text("Meu Time") },
+                            selected = currentDestination?.hierarchy?.any { it.hasRoute(TeamBuilderRoute::class) } == true,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = PokeRed,
+                                selectedTextColor = PokeRed,
+                                unselectedIconColor = Color.Gray,
+                                unselectedTextColor = Color.Gray,
+                                indicatorColor = Color(0xFF2C2C2C)
+                            ),
+                            onClick = {
+                                navController.navigate(TeamBuilderRoute) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                    }
+                }
             }
+        ) { innerPadding ->
+            val modifier = if (showBottomBar) Modifier.padding(innerPadding) else Modifier
 
-            composable<PokedexRoute> {
-                PokedexGridScreen(
-                    pokemons = PokemonMock.pokedex,
-                    onPokemonClick = { pokemonId ->
+            NavHost(
+                navController = navController,
+                startDestination = WelcomeRoute,
+                modifier = modifier
+            ) {
+                composable<WelcomeRoute> {
+                    WelcomeScreen(onGetStartedClick = {
+                        navController.navigate(PokedexRoute) {
+                            popUpTo(WelcomeRoute) { inclusive = true }
+                        }
+                    })
+                }
+
+                composable<PokedexRoute> {
+                    PokedexGridScreen(pokemons = pokedex, isLoading = isLoading, onPokemonClick = { pokemonId ->
                         navController.navigate(PokemonDetailRoute(pokemonId))
-                    },
-                    onBackClick = {
-                        navController.popBackStack()
-                    }
-                )
-            }
+                    })
+                }
 
-            composable<PokemonDetailRoute> { backStackEntry ->
-                val route = backStackEntry.toRoute<PokemonDetailRoute>()
-                val pokemon = PokemonMock.findById(route.pokemonId)
+                composable<TeamBuilderRoute> {
+                    TeamBuilderScreen(myTeam = myTeam, onRemoveClick = { pokemon -> viewModel.removeFromTeam(pokemon) })
+                }
 
-                PokemonDetailScreen(
-                    pokemon = pokemon,
-                    onBackClick = {
-                        navController.popBackStack()
-                    }
-                )
+                composable<PokemonDetailRoute> { backStackEntry ->
+                    val route = backStackEntry.toRoute<PokemonDetailRoute>()
+                    val pokemon = pokedex.find { it.id == route.pokemonId } ?: myTeam.find { it.id == route.pokemonId }
+                    val isInTeam = myTeam.any { it.id == route.pokemonId }
+
+                    PokemonDetailScreen(
+                        pokemon = pokemon,
+                        isInTeam = isInTeam,
+                        onBackClick = { navController.popBackStack() }, // Botão de voltar funcional!
+                        onToggleTeam = {
+                            if (pokemon != null) {
+                                if (isInTeam) viewModel.removeFromTeam(pokemon)
+                                else viewModel.addToTeam(pokemon)
+                            }
+                        }
+                    )
+                }
             }
         }
-
     }
-
 }
