@@ -1,5 +1,9 @@
+
+
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -7,23 +11,22 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.ksp) // Puxa do TOML com segurança
+    // 1. Aplicando o Plugin Oficial do KSP
+    id("com.google.devtools.ksp") version "2.0.20-1.0.25"
     id("androidx.room") version "2.7.0-alpha04"
 }
 
+// Configuração obrigatória para o Room KMP gerar o histórico do banco
 room {
     schemaDirectory("$projectDir/schemas")
 }
-
-
-
 kotlin {
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -33,12 +36,11 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-
             implementation("io.ktor:ktor-client-okhttp:3.0.0")
         }
         iosMain.dependencies {
@@ -50,24 +52,24 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
+
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.9.2")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            implementation(compose.materialIconsExtended)
+
+            // --- ROOM & SQLITE ---
+            implementation("androidx.room:room-runtime:2.7.0-alpha04")
+            implementation("androidx.sqlite:sqlite-bundled:2.5.0-alpha04")
+
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha08")
+
+            // Ktor e Json (Explícito)
             implementation("io.ktor:ktor-client-core:3.0.0")
             implementation("io.ktor:ktor-client-content-negotiation:3.0.0")
             implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.0")
-            implementation(compose.materialIconsExtended)
-            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
-            implementation("androidx.room:room-runtime:2.7.0-alpha04")
-            implementation("androidx.sqlite:sqlite-bundled:2.5.0-alpha04")
-            implementation("io.ktor:ktor-client-core:2.3.11")
-            implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
-            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.7.0-alpha07")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+            // Coil
             implementation("io.coil-kt.coil3:coil-compose:3.0.4")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.4")
         }
@@ -106,6 +108,8 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
-    add("ksp", "androidx.room:room-compiler:2.7.0-alpha04")
+    // KSP Processors for Room
+    add("kspAndroid", "androidx.room:room-compiler:2.7.0-alpha04")
+    add("kspIosSimulatorArm64", "androidx.room:room-compiler:2.7.0-alpha04")
+    add("kspIosArm64", "androidx.room:room-compiler:2.7.0-alpha04")
 }
-
