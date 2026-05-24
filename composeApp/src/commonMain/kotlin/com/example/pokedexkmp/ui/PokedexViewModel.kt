@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pokedexkmp.data.PokeApiClient
 import com.example.pokedexkmp.data.Pokemon
+import com.example.pokedexkmp.data.PokemonMock
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 

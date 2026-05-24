@@ -7,7 +7,15 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.ksp) // Puxa do TOML com segurança
+    id("androidx.room") version "2.7.0-alpha04"
 }
+
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
+
 
 kotlin {
     androidTarget {
@@ -51,7 +59,14 @@ kotlin {
             implementation("io.ktor:ktor-client-content-negotiation:3.0.0")
             implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.0")
             implementation(compose.materialIconsExtended)
-
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+            implementation("androidx.room:room-runtime:2.7.0-alpha04")
+            implementation("androidx.sqlite:sqlite-bundled:2.5.0-alpha04")
+            implementation("io.ktor:ktor-client-core:2.3.11")
+            implementation("io.ktor:ktor-client-content-negotiation:2.3.11")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.11")
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.7.0-alpha07")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
             implementation("io.coil-kt.coil3:coil-compose:3.0.4")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.4")
@@ -91,5 +106,6 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+    add("ksp", "androidx.room:room-compiler:2.7.0-alpha04")
 }
 
