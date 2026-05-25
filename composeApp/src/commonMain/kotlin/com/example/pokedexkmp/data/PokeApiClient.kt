@@ -21,9 +21,10 @@ class PokeApiClient {
     }
 
     // Mantemos a função original caso precise
-    suspend fun getPokemons(limit: Int = 20): List<Pokemon> {
+    // Adicionamos o offset na assinatura da função e na URL
+    suspend fun getPokemons(limit: Int = 20, offset: Int = 0): List<Pokemon> {
         return try {
-            val listResponse: PokemonListResponse = httpClient.get("https://pokeapi.co/api/v2/pokemon?limit=$limit").body()
+            val listResponse: PokemonListResponse = httpClient.get("https://pokeapi.co/api/v2/pokemon?limit=$limit&offset=$offset").body()
             listResponse.results.mapNotNull { result ->
                 val id = result.url.trimEnd('/').substringAfterLast("/").toIntOrNull()
                 id?.let { getPokemonDetail(it) }

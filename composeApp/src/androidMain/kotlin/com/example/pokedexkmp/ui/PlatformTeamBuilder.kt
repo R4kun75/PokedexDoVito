@@ -36,7 +36,7 @@ actual fun TeamBuilderScreen(myTeam: List<Pokemon>, onRemoveClick: (Pokemon) -> 
                 color = Color.White
             )
             Spacer(modifier = Modifier.width(12.dp))
-            // Contador estilizado (Suco de Detalhe!)
+
             Box(
                 modifier = Modifier
                     .clip(CircleShape)
@@ -75,19 +75,17 @@ actual fun TeamBuilderScreen(myTeam: List<Pokemon>, onRemoveClick: (Pokemon) -> 
 @Composable
 private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
     val primaryType = pokemon.types.firstOrNull()
-    // Herda o gradiente vibrante da Grid para consistência visual
     val cardGradient = getGradientForType(primaryType)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(110.dp)
+            .height(125.dp) // Aumentado ligeiramente para acomodar o texto do local sem esmagar
             .clip(RoundedCornerShape(20.dp))
-            .background(cardGradient) // Gradiente Dinâmico por afinidade
+            .background(cardGradient)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Imagem Centralizada num fundo circular translúcido
         Box(
             modifier = Modifier
                 .size(80.dp)
@@ -104,7 +102,6 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Info (Nome e ID)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = pokemon.name.capitalizePokemonName(),
@@ -115,10 +112,21 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
             Text(
                 text = pokemon.id.formatPokemonNumber(),
                 fontSize = 14.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.White.copy(alpha = 0.6f)
             )
 
-            Row(modifier = Modifier.padding(top = 8.dp)) {
+            // NOVA LINHA: Renderiza o local de captura salvo no objeto
+            if (pokemon.description.isNotEmpty()) {
+                Text(
+                    text = pokemon.description,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+
+            Row(modifier = Modifier.padding(top = 6.dp)) {
                 pokemon.types.forEach { type ->
                     Box(
                         modifier = Modifier
@@ -137,7 +145,6 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
             }
         }
 
-        // Botão de Remover Customizado (Sutil e elegante)
         IconButton(
             onClick = onRemoveClick,
             modifier = Modifier

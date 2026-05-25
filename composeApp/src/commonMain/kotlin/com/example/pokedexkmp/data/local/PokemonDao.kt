@@ -16,13 +16,19 @@ interface PokemonDao {
     suspend fun insertAllCache(pokemons: List<PokemonCacheEntity>)
 
     // 2. Consulta paginada com filtro de busca (SearchBar) direto no SQL
+    // A QUERY MAGNÍFICA DO PROFESSOR: Busca por Nome E por Tipo com Paginação!
     @Query("""
         SELECT * FROM pokemon_cache 
-        WHERE name LIKE :searchQuery 
-        ORDER BY id ASC 
+        WHERE name LIKE '%' || :searchQuery || '%' 
+        AND (:typeFilter = '' OR types LIKE '%' || :typeFilter || '%')
         LIMIT :limit OFFSET :offset
     """)
-    suspend fun getPokedexPage(limit: Int, offset: Int, searchQuery: String): List<PokemonCacheEntity>
+    suspend fun getPokedexPage(
+        limit: Int,
+        offset: Int,
+        searchQuery: String,
+        typeFilter: String // <-- Novo parâmetro
+    ): List<PokemonCacheEntity>
 
     // 3. Verifica se o cache já possui registros para evitar downloads redundantes
     @Query("SELECT COUNT(*) FROM pokemon_cache")

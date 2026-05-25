@@ -72,12 +72,23 @@ actual fun TeamBuilderScreen(myTeam: List<Pokemon>, onRemoveClick: (Pokemon) -> 
                                 modifier = Modifier.size(56.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = pokemon.name.capitalizePokemonName(),
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Black
-                            )
+                            Column {
+                                Text(
+                                    text = pokemon.name.capitalizePokemonName(),
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.Black
+                                )
+                                // NOVA LINHA: O Local de Captura nativo do iOS
+                                if (pokemon.description.isNotEmpty()) {
+                                    Text(
+                                        text = pokemon.description,
+                                        fontSize = 12.sp,
+                                        color = Color.Gray,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
+                            }
                         }
                         IconButton(onClick = { onRemoveClick(pokemon) }) {
                             Icon(
