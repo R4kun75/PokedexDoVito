@@ -42,7 +42,7 @@ class PokeApiClient {
         }.awaitAll().filterNotNull()
     }
 
-    private suspend fun getPokemonDetail(id: Int): Pokemon? {
+    suspend fun getPokemonDetail(id: Int): Pokemon? {
         return try {
             val response: PokemonDetailResponse = httpClient.get("https://pokeapi.co/api/v2/pokemon/$id").body()
             response.toPokemon()

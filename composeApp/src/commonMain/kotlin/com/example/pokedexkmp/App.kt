@@ -1,5 +1,7 @@
 package com.example.pokedexkmp
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -7,6 +9,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -37,9 +40,10 @@ fun App(database: AppDatabase) { // <-- RECEBENDO O BANCO AQUI!
         val viewModel = viewModel { PokedexViewModel(database) }
         val pokedex by viewModel.filteredPokedex.collectAsState()
         val searchQuery by viewModel.searchQuery.collectAsState()
+        val selectedType by viewModel.selectedType.collectAsState()
         val myTeam by viewModel.myTeam.collectAsState()
         val isLoading by viewModel.isLoading.collectAsState()
-        val selectedType by viewModel.selectedType.collectAsState() // Novo Estado
+
 
         val snackbarHostState = remember { SnackbarHostState() }
 
@@ -130,10 +134,10 @@ fun App(database: AppDatabase) { // <-- RECEBENDO O BANCO AQUI!
                     PokedexGridScreen(
                         pokemons = pokedex,
                         searchQuery = searchQuery,
-                        selectedType = selectedType, // <--- PASSA PARA A TELA
-                        isLoading = isLoading,
+                        selectedType = selectedType, // Parâmetro visual do filtro
                         onSearchQueryChange = { viewModel.onSearchQueryChanged(it) },
-                        onTypeSelect = { viewModel.onTypeSelected(it) }, // <--- CLIQUE DO FILTRO
+                        onTypeSelect = { viewModel.onTypeSelected(it) }, // Ação de clique do filtro
+                        isLoading = isLoading,
                         onPokemonClick = { pokemonId -> navController.navigate(PokemonDetailRoute(pokemonId)) },
                         onLoadMore = { viewModel.carregarMaisPokemons() }
                     )
@@ -141,23 +145,40 @@ fun App(database: AppDatabase) { // <-- RECEBENDO O BANCO AQUI!
 
                 composable<PokemonDetailRoute> { backStackEntry ->
                     val route = backStackEntry.toRoute<PokemonDetailRoute>()
-                    val selectedPokemon = pokedex.find { it.id == route.pokemonId } ?: myTeam.find { it.id == route.pokemonId }
 
+                    // 1. Observa o Pokémon que vem da API
+                    val selectedPokemon by viewModel.selectedPokemonDetails.collectAsState()
+                    val isPokemonInTeam = myTeam.any { it.id == route.pokemonId }
+
+                    // 2. O GATILHO MÁGICO: Dispara a requisição HTTP assim que entra na tela!
+                    LaunchedEffect(route.pokemonId) {
+                        viewModel.carregarDetalhesPokemon(route.pokemonId)
+                    }
+
+                    // 3. Renderização Condicional
                     if (selectedPokemon != null) {
-                        val isPokemonInTeam = myTeam.any { it.id == selectedPokemon.id }
-
+                        // Se a API já respondeu, desenha a tela com os detalhes
                         PokemonDetailScreen(
                             pokemon = selectedPokemon,
                             isInTeam = isPokemonInTeam,
                             onBackClick = { navController.popBackStack() },
                             onToggleTeam = { localDigitado ->
                                 if (isPokemonInTeam) {
-                                    viewModel.removeFromTeam(selectedPokemon)
+                                    viewModel.removeFromTeam(selectedPokemon!!)
                                 } else {
-                                    viewModel.addToTeam(selectedPokemon, localDigitado)
+                                    viewModel.addToTeam(selectedPokemon!!, localDigitado)
                                 }
                             }
                         )
+                    } else {
+                        // Se selectedPokemon é nulo, a API ainda está processando.
+                        // Mostramos uma tela preta com o ícone girando (Loading)!
+                        Box(
+                            modifier = Modifier.fillMaxSize().background(DarkBackground),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Color(0xFFE3350D)) // Vermelho Pokémon
+                        }
                     }
                 }
 

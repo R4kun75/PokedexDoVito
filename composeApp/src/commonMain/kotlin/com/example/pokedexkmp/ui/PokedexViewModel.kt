@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
 
     // A nossa chave de acesso ao SQLite
-    private val pokemonDao = database.pokemonDao()
     private val apiClient = PokeApiClient()
+    private val pokemonDao = database.pokemonDao()
 
     private val _pokedex = MutableStateFlow<List<Pokemon>>(emptyList())
     private val _searchQuery = MutableStateFlow("")
@@ -35,6 +35,10 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    // Estado para guardar o Pokémon selecionado AO VIVO da API
+    private val _selectedPokemonDetails = MutableStateFlow<Pokemon?>(null)
+    val selectedPokemonDetails: StateFlow<Pokemon?> = _selectedPokemonDetails.asStateFlow()
 
     private val _uiEvent = MutableSharedFlow<String>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -89,34 +93,32 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
                 _uiEvent.emit("Dados atualizados da API!")
 
             } catch (e: Exception) {
-                // MODO OFFLINE: Lê o cache e reconstrói o Pokémon inteiro com as cores originais!
-                val pokemonsDoBanco =
-                    pokemonDao.getPokedexPage(limit = 20, offset = 0, searchQuery = "%%")
+                // Usando o nome correto: pokemonsDoBanco e passando os 4 parâmetros!
+                val pokemonsDoBanco = pokemonDao.getPokedexPage(
+                    limit = 20, offset = currentOffset,
+                    searchQuery = "", typeFilter = ""
+                )
 
-                _pokedex.value = pokemonsDoBanco.map { entity ->
-                    Pokemon(
-                        id = entity.id, name = entity.name,
-                        imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${entity.id}.png",
-                        types = entity.types.split(","),
-                        height = entity.height,
-                        weight = entity.weight,
-                        stats = if (entity.stats.isBlank()) emptyList() else entity.stats.split(",")
-                            .map { statStr ->
+                if (pokemonsDoBanco.isNotEmpty()) {
+                    val convertidos = pokemonsDoBanco.map { entity ->
+                        Pokemon(
+                            id = entity.id, name = entity.name,
+                            imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${entity.id}.png",
+                            types = entity.types.split(","),
+                            height = entity.height, weight = entity.weight,
+                            stats = if (entity.stats.isBlank()) emptyList() else entity.stats.split(",").map { statStr ->
                                 val parts = statStr.split(":")
                                 PokemonStat(parts[0], parts[1].toInt())
                             },
-                        description = "Modo Offline ativo."
-                    )
+                            description = "Modo Offline ativo."
+                        )
+                    }
+                    _pokedex.value = _pokedex.value + convertidos
+                    currentOffset += 20
                 }
-                _uiEvent.emit("Sem internet: Pokédex carregada do SQLite!")
             }
 
-            _isLoading.value = false
         }
-    }
-
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
     }
 
     fun onTypeSelected(type: String) {
@@ -128,7 +130,7 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
         resetAndLoad()
     }
 
-    override fun onSearchQueryChanged(query: String) {
+     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
         resetAndLoad()
     }
@@ -196,19 +198,22 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
 
         viewModelScope.launch {
             isPaginating = true
+            _isLoading.value = _pokedex.value.isEmpty()
 
             val currentSearch = _searchQuery.value
             val currentType = _selectedType.value
 
             try {
-                // REGRA DE NEGÓCIO: Se o usuário está filtrando, lemos APENAS do Banco Local!
-                if (currentSearch.isNotEmpty() || currentType.isNotEmpty()) {
-                    val novosDoBanco = pokemonDao.getPokedexPage(
-                        limit = 20, offset = currentOffset,
-                        searchQuery = currentSearch, typeFilter = currentType
-                    )
+                // 1. REGRA DE OURO DO PROFESSOR: Consulta o banco de dados local PRIMEIRO!
+                val bancoLocal = pokemonDao.getPokedexPage(
+                    limit = 20, offset = currentOffset,
+                    searchQuery = currentSearch, typeFilter = currentType
+                )
 
-                    val convertidos = novosDoBanco.map { entity ->
+                // 2. Validação: O processo já foi realizado antes? Tem dados aqui?
+                if (bancoLocal.isNotEmpty() || currentSearch.isNotEmpty() || currentType.isNotEmpty()) {
+                    // SIM! Ignora a API completamente e desenha a tela direto do SQLite
+                    val convertidos = bancoLocal.map { entity ->
                         Pokemon(
                             id = entity.id, name = entity.name,
                             imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${entity.id}.png",
@@ -218,55 +223,65 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
                                 val parts = statStr.split(":")
                                 PokemonStat(parts[0], parts[1].toInt())
                             },
-                            description = "Filtro Local Ativo."
+                            description = "Sincronização Local." // Aviso que veio do banco
                         )
                     }
                     _pokedex.value = _pokedex.value + convertidos
+                    currentOffset += 20
 
                 } else {
-                    // Sem filtros? Tenta puxar a próxima página da Internet normalmente
+                    // 3. NÃO! O banco está vazio (Primeira inicialização ou novo Scroll).
+                    // Faz a requisição à rede, obtém os dados e guarda no cache.
                     val novosPokemonsApi = apiClient.getPokemons(limit = 20, offset = currentOffset)
                     if (novosPokemonsApi.isEmpty()) throw Exception("Erro de rede")
 
                     val cacheEntities = novosPokemonsApi.map {
-                        com.example.pokedexkmp.data.local.PokemonCacheEntity(
+                        PokemonCacheEntity(
                             id = it.id, name = it.name,
                             types = it.types.joinToString(","),
                             weight = it.weight, height = it.height,
                             stats = it.stats.joinToString(",") { stat -> "${stat.name}:${stat.value}" }
                         )
                     }
+                    // Persiste na tabela local
                     pokemonDao.insertAllCache(cacheEntities)
-                    _pokedex.value = _pokedex.value + novosPokemonsApi
-                }
-                currentOffset += 20
 
-            } catch (e: Exception) {
-                // Falha de Internet no carregamento normal: Cai para o Banco Local
-                val novosDoBanco = pokemonDao.getPokedexPage(
-                    limit = 20, offset = currentOffset,
-                    searchQuery = "", typeFilter = ""
-                )
-                if (novosDoBanco.isNotEmpty()) {
-                    val convertidos = novosDoBanco.map { entity ->
-                        // ... (mesma conversão de entidade para Pokemon que você já tem no catch)
-                        Pokemon(
-                            id = entity.id, name = entity.name,
-                            imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${entity.id}.png",
-                            types = entity.types.split(","),
-                            height = entity.height, weight = entity.weight,
-                            stats = if (entity.stats.isBlank()) emptyList() else entity.stats.split(",").map { statStr ->
-                                val parts = statStr.split(":")
-                                PokemonStat(parts[0], parts[1].toInt())
-                            },
-                            description = "Modo Offline ativo."
-                        )
-                    }
-                    _pokedex.value = _pokedex.value + convertidos
+                    _pokedex.value = _pokedex.value + novosPokemonsApi
                     currentOffset += 20
                 }
+
+            } catch (e: Exception) {
+                // Se der erro de rede logo na primeira inicialização (banco vazio e sem Wi-Fi)
+                _uiEvent.emit("Erro ao carregar a Pokédex. Verifique sua internet.")
             }
+
             isPaginating = false
+            _isLoading.value = false
+        }
+    }
+
+    fun carregarDetalhesPokemon(id: Int) {
+        viewModelScope.launch {
+            // 1. Limpa o Pokémon anterior para forçar a tela de Loading
+            _selectedPokemonDetails.value = null
+
+            try {
+                // 2. Bate no endpoint ao vivo via Ktor!
+                val pokemonAoVivo = apiClient.getPokemonDetail(id)
+
+                // A SOLUÇÃO: Se o Ktor engolir o erro de rede e devolver nulo, nós forçamos o erro!
+                if (pokemonAoVivo == null) {
+                    throw Exception("Erro de rede ou Pokémon não encontrado")
+                }
+
+                _selectedPokemonDetails.value = pokemonAoVivo
+            } catch (e: Exception) {
+                // 3. Fallback: Cai aqui automaticamente se estiver offline
+                _uiEvent.emit("Sem internet: Usando dados salvos!")
+
+                val fallbackLocal = _pokedex.value.find { it.id == id } ?: _myTeam.value.find { it.id == id }
+                _selectedPokemonDetails.value = fallbackLocal
+            }
         }
     }
 
