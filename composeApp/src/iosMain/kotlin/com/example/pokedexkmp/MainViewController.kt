@@ -10,6 +10,7 @@ fun MainViewController() = ComposeUIViewController {
     // INSTALANDO O MOTOR NO IOS
     val database = getDatabaseBuilder()
         .setDriver(BundledSQLiteDriver())
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
     App(database = database)

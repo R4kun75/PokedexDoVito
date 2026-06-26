@@ -3,14 +3,13 @@ package com.example.pokedexkmp.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-// Aqui nós "registramos" as duas tabelas que criamos e definimos a versão do banco.
-// Se no futuro você adicionar uma nova tabela, a versão muda para 2.
+// A versão muda para 2! O Room KMP vai gerar um arquivo "2.json" na sua pasta schemas.
 @Database(
     entities = [
         PokemonCacheEntity::class,
         PokemonTeamEntity::class
     ],
-    version = 1
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
 

@@ -14,6 +14,10 @@ junit = "4.13.2"
 kotlin = "2.0.20"
 material3 = "1.10.0-alpha05"
 ksp = "2.0.20-1.0.25"
+# --- NOVAS VERSÕES DA M3 ---
+peekaboo = "0.5.2"
+mokoPermissions = "0.18.0"
+mokoGeo = "0.8.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -40,6 +44,13 @@ coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version =
 ktor-client-core = { module = "io.ktor:ktor-client-core", version = "3.0.0" }
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version = "3.0.0" }
 ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version = "3.0.0" }
+# --- NOVAS BIBLIOTECAS DA M3 ---
+peekaboo-ui = { module = "io.github.onseok:peekaboo-ui", version.ref = "peekaboo" }
+peekaboo-image = { module = "io.github.onseok:peekaboo-image-picker", version.ref = "peekaboo" }
+moko-permissions = { module = "dev.icerock.moko:permissions-compose", version.ref = "mokoPermissions" }
+moko-geo = { module = "dev.icerock.moko:geo-compose", version.ref = "mokoGeo" }
+moko-permissions-core = { module = "dev.icerock.moko:permissions", version.ref = "mokoPermissions" }
+moko-geo-core = { module = "dev.icerock.moko:geo", version.ref = "mokoGeo" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

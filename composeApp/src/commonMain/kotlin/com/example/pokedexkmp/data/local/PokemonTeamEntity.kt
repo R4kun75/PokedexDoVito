@@ -12,5 +12,12 @@ data class PokemonTeamEntity(
     val types: String,
     val weight: Int,
     val height: Int,
-    val stats: String
+    val stats: String,
+
+    // --- NOVOS CAMPOS PARA A M3 ---
+    // Usamos Double? e String? (com interrogação) para permitir valores nulos.
+    // Assim, os Pokémons antigos capturados na M2 não causam crash no app!
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val photoPath: String? = null
 )

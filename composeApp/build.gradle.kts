@@ -72,6 +72,15 @@ kotlin {
             // Coil
             implementation("io.coil-kt.coil3:coil-compose:3.0.4")
             implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.4")
+
+            // --- DEPENDÊNCIAS DE HARDWARE DA M3 ---
+            implementation(libs.peekaboo.ui)
+            implementation(libs.peekaboo.image)
+            implementation(libs.moko.permissions)
+            implementation(libs.moko.geo)
+            // Adicione as duas linhas abaixo:
+            implementation(libs.moko.permissions.core)
+            implementation(libs.moko.geo.core)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

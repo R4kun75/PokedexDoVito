@@ -141,7 +141,13 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
         carregarMaisPokemons() // Carrega a página 0 com os novos filtros
     }
 
-    fun addToTeam(pokemon: Pokemon, localCaptura: String) { // <-- Novo parâmetro aqui!
+    fun addToTeam(
+        pokemon: Pokemon,
+        localCaptura: String,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        photoPath: String? = null // Aqui vamos receber a imagem em Base64
+    ) {
         viewModelScope.launch {
             val currentTeam = _myTeam.value
             if (currentTeam.any { it.id == pokemon.id }) return@launch
@@ -151,23 +157,28 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
                 return@launch
             }
 
-            // Grava a Entidade do Time com o texto que o usuário digitou!
+            // Grava a Entidade do Time com o texto, GPS e Foto!
             val teamEntity = PokemonTeamEntity(
                 id = pokemon.id,
                 name = pokemon.name,
                 imageUrl = pokemon.imageUrl,
-                localCaptura = localCaptura, // <-- Usando a variável
+                localCaptura = localCaptura,
                 types = pokemon.types.joinToString(","),
                 weight = pokemon.weight,
                 height = pokemon.height,
-                stats = pokemon.stats.joinToString(",") { stat -> "${stat.name}:${stat.value}" }
+                stats = pokemon.stats.joinToString(",") { stat -> "${stat.name}:${stat.value}" },
+                // --- DADOS DA M3 ---
+                latitude = latitude,
+                longitude = longitude,
+                photoPath = photoPath
             )
 
             pokemonDao.insertTeamMember(teamEntity)
 
+            // Atualiza a UI avisando que salvou
             val pokemonComLocal = pokemon.copy(description = "Capturado em: ${teamEntity.localCaptura}")
             _myTeam.value = currentTeam + pokemonComLocal
-            _uiEvent.emit("${pokemon.name} adicionado ao time!")
+            _uiEvent.emit("${pokemon.name} adicionado ao time com sucesso!")
         }
     }
 

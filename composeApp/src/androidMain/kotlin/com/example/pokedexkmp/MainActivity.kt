@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         val database = getDatabaseBuilder(applicationContext)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
 
         setContent {
