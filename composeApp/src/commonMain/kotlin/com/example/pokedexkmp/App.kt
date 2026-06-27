@@ -163,8 +163,13 @@ fun App(database: AppDatabase) { // <-- RECEBENDO O BANCO AQUI!
                             isInTeam = isPokemonInTeam,
                             onBackClick = { navController.popBackStack() },
                             onToggleTeam = { local, lat, lon, photoString ->
-                                // CORREÇÃO AQUI: Usamos a variável 'selectedPokemon' que foi declarada no topo!
-                                viewModel.addToTeam(selectedPokemon!!, local, lat, lon, photoString)
+                                if (isPokemonInTeam) {
+                                    // Se já está no time, o botão serve para remover!
+                                    viewModel.removeFromTeam(selectedPokemon!!)
+                                } else {
+                                    // Se não está, ele salva com o GPS e a Foto!
+                                    viewModel.addToTeam(selectedPokemon!!, local, lat, lon, photoString)
+                                }
                             }
                         )
                     } else {
