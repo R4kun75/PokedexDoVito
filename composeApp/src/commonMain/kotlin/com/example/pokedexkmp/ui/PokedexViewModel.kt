@@ -66,7 +66,8 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
                             val parts = statStr.split(":")
                             PokemonStat(parts[0], parts[1].toInt())
                         },
-                    description = "Capturado em: ${entity.localCaptura}"
+                    description = "Capturado em: ${entity.localCaptura}",
+                    photoPath = entity.photoPath
                 )
             }
             _myTeam.value = timeSalvo
@@ -176,7 +177,7 @@ class PokedexViewModel(private val database: AppDatabase) : ViewModel() {
             pokemonDao.insertTeamMember(teamEntity)
 
             // Atualiza a UI avisando que salvou
-            val pokemonComLocal = pokemon.copy(description = "Capturado em: ${teamEntity.localCaptura}")
+            val pokemonComLocal = pokemon.copy(description = "Capturado em: ${teamEntity.localCaptura}", photoPath = teamEntity.photoPath)
             _myTeam.value = currentTeam + pokemonComLocal
             _uiEvent.emit("${pokemon.name} adicionado ao time com sucesso!")
         }

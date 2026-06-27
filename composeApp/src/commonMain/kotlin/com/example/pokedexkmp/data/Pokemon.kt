@@ -13,5 +13,7 @@ data class Pokemon(
     val height: Int,
     val weight: Int,
     val stats: List<PokemonStat>,
-    val description: String
+    val description: String,
+
+    val photoPath: String? = null
 )

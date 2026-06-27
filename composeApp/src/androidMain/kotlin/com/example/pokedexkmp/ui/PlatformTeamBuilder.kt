@@ -14,11 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.pokedexkmp.data.Pokemon
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 
 @Composable
 actual fun TeamBuilderScreen(myTeam: List<Pokemon>, onRemoveClick: (Pokemon) -> Unit) {
@@ -72,6 +75,7 @@ actual fun TeamBuilderScreen(myTeam: List<Pokemon>, onRemoveClick: (Pokemon) -> 
     }
 }
 
+@OptIn(ExperimentalEncodingApi::class)
 @Composable
 private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
     val primaryType = pokemon.types.firstOrNull()
@@ -93,10 +97,21 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
                 .background(Color.White.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
+
+            // NOVA LÓGICA: Verifica se tem foto salva em Base64 no banco
+            val imageModel = if (!pokemon.photoPath.isNullOrBlank()) {
+                Base64.Default.decode(pokemon.photoPath) // Decodifica para Bytes
+            } else {
+                pokemon.imageUrl // Usa a foto oficial da API se não tiver foto da câmera
+            }
+
             AsyncImage(
-                model = pokemon.imageUrl,
+                model = imageModel,
                 contentDescription = pokemon.name,
-                modifier = Modifier.size(65.dp)
+                modifier = Modifier
+                    .size(65.dp)
+                    .clip(CircleShape), // Garante que a sua foto fique redonda igual a oficial
+                contentScale = ContentScale.Crop // Corta a foto perfeitamente dentro do círculo
             )
         }
 
@@ -115,7 +130,7 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
                 color = Color.White.copy(alpha = 0.6f)
             )
 
-            // NOVA LINHA: Renderiza o local de captura salvo no objeto
+            // Renderiza o local de captura salvo no objeto
             if (pokemon.description.isNotEmpty()) {
                 Text(
                     text = pokemon.description,
