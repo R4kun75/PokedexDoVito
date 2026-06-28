@@ -459,9 +459,8 @@ fun PokemonDetailScreen(
                                 "Local Desconhecido"
                             }
 
-                            val base64Image = photoByteArray?.let { Base64.Default.encode(it) }
-
-                            onToggleTeam(finalLocation, latitude, longitude, base64Image)
+                            val savedPhotoPath = photoByteArray?.let { savePhotoToLocal(it) }
+                            onToggleTeam(finalLocation, latitude, longitude, savedPhotoPath)
 
                             showDialog = false
                             photoByteArray = null

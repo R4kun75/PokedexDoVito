@@ -97,12 +97,11 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
                 .background(Color.White.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
-
-            // NOVA LÓGICA: Verifica se tem foto salva em Base64 no banco
+            // Lógica limpa: Se tem caminho físico, lê o arquivo. Se não, usa a URL.
             val imageModel = if (!pokemon.photoPath.isNullOrBlank()) {
-                Base64.Default.decode(pokemon.photoPath) // Decodifica para Bytes
+                java.io.File(pokemon.photoPath!!)
             } else {
-                pokemon.imageUrl // Usa a foto oficial da API se não tiver foto da câmera
+                pokemon.imageUrl
             }
 
             AsyncImage(
@@ -110,8 +109,8 @@ private fun TeamMemberCard(pokemon: Pokemon, onRemoveClick: () -> Unit) {
                 contentDescription = pokemon.name,
                 modifier = Modifier
                     .size(65.dp)
-                    .clip(CircleShape), // Garante que a sua foto fique redonda igual a oficial
-                contentScale = ContentScale.Crop // Corta a foto perfeitamente dentro do círculo
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
         }
 
