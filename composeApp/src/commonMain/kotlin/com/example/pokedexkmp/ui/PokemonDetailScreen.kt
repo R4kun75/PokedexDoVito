@@ -96,6 +96,24 @@ fun PokemonDetailScreen(
             }
         }
     )
+
+    val requestCameraPermission =
+        rememberCameraPermissionRequester(
+
+            onGranted = {
+
+                showCamera = true
+
+            },
+
+            onDenied = {
+
+                hardwareError = "Permissão da câmera negada."
+
+            }
+
+        )
+
     val primaryType = pokemon.types.firstOrNull() ?: "normal"
     val typeGradient = getGradientForType(primaryType)
     val typeColor = getColorForType(primaryType)
@@ -364,8 +382,9 @@ fun PokemonDetailScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
 
+                            //camera
                             IconButton(
-                                onClick = { showCamera = true },
+                                onClick = requestCameraPermission,
                                 modifier = Modifier.background(Color(0xFF2C2C2C), CircleShape)
                             ) {
                                 Icon(Icons.Default.CameraAlt, contentDescription = "Câmera", tint = Color.White)
